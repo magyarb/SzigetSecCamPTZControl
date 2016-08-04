@@ -65,7 +65,6 @@ namespace _02_PTZ_Camera_Motion_Control
 
             InitializeViewer();
 
-            comboBox_Direction.DataSource = Enum.GetValues(typeof(PatrolDirection));
         }
         private void poll()
         {
@@ -93,28 +92,6 @@ namespace _02_PTZ_Camera_Motion_Control
 
         private void GetCameraStreams(IpCameraHandler _model)
         {
-            if (_model.Camera.AvailableStreams.Any())
-            {
-                var selected = 0;
-                InvokeGuiThread(() =>
-                {
-                    for (var index = 0; index < _model.Camera.AvailableStreams.Count(); index++)
-                    {
-
-                        if (_model.Camera.CurrentStream.Name ==
-                            _model.Camera.AvailableStreams[index].Name)
-                        {
-                            selected = index;
-                        }
-                        StreamCombo.Items.Add(_model.Camera.AvailableStreams[index].Name +
-                                                " " +
-                                                _model.Camera.AvailableStreams[index].VideoEncoding
-                                                    .Resolution);
-                    }
-                    StreamCombo.SelectedIndex = selected;
-
-                });
-            }
         }
 
         private void ModelCameraErrorOccured(object sender, CameraErrorEventArgs e)
@@ -133,15 +110,6 @@ namespace _02_PTZ_Camera_Motion_Control
 
         private void button_Connect_Click(object sender, EventArgs e)
         {
-            ClearFields();
-            // ONVIF
-            if (tb_cameraUrl.Text.ToUpper().Trim().StartsWith("RTSP://"))
-                Log.Write("Connecting to a stream of ONVIF device by RTSP");
-            else if (tb_cameraUrl.Text.ToUpper().Trim().StartsWith("HTTP://"))
-                Log.Write("Connecting to ONVIF device by HTTP");
-            else if (tb_cameraUrl.Text.ToUpper().Trim().StartsWith("USB://"))
-                Log.Write("Connecting to an USB device");
-            ConnectIpCam();
         }
 
         private void button_Disconnect_Click(object sender, EventArgs e)
@@ -179,14 +147,7 @@ namespace _02_PTZ_Camera_Motion_Control
 
         private void ClearFields()
         {
-            InvokeGuiThread(() =>
-            {
-                StreamCombo.Items.Clear();
-                AudioInfoText.Clear();
-                VideoInfoText.Clear();
-                DetailsText.Clear();
-                StreamCombo.Text = String.Empty;
-            });
+
         }
 
         #region Stream select
@@ -195,8 +156,6 @@ namespace _02_PTZ_Camera_Motion_Control
         {
             var combo = sender as ComboBox;
             if (combo == null || combo.SelectedIndex == -1) return;
-            AudioInfoText.Clear();
-            VideoInfoText.Clear();
 
             /*var CurrentStream = _model.Camera.AvailableStreams[StreamCombo.SelectedIndex];
             if (CurrentStream == null) throw new ArgumentNullException("Stream");
@@ -216,17 +175,6 @@ namespace _02_PTZ_Camera_Motion_Control
         #region Image Size
         private void applyButton_Click(object sender, EventArgs e)
         {
-            try
-            {
-                var height = int.Parse(heightText.Text);
-                var width = int.Parse(widthText.Text);
-
-                ControlToCenter();
-            }
-            catch (Exception exception)
-            {
-                Log.Write(exception.Message);
-            }
         }
 
         void ControlToCenter()
@@ -268,28 +216,6 @@ namespace _02_PTZ_Camera_Motion_Control
 
         private void Flip(object sender, EventArgs e)
         {
-            var flippedX = HorizontalFlipCheck.Checked;
-            var flippedY = VerticalFlipCheck.Checked;
-
-            if (flippedX && flippedY)
-            {
-
-                return;
-            }
-
-            if (flippedX)
-            {
-
-                return;
-            }
-
-            if (flippedY)
-            {
-
-                return;
-            }
-
-
         }
 
         private void move()
@@ -344,13 +270,7 @@ namespace _02_PTZ_Camera_Motion_Control
 
         private void btn_compose_Click(object sender, EventArgs e)
         {
-            var result = _myCameraUrlBuilder.ShowDialog();
 
-            if (result != DialogResult.OK) return;
-
-            tb_cameraUrl.Text = _myCameraUrlBuilder.CameraURL;
-
-            button_Connect.Enabled = true;
         }
 
         private void button_Right_Click(object sender, EventArgs e)
