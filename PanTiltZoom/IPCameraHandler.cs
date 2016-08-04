@@ -38,12 +38,13 @@ namespace _02_PTZ_Camera_Motion_Control
             Camera = new OzekiCamera(cameraUrl);
 
             if (Camera == null) return;
-            Connector.Connect(Camera.VideoChannel, ImageProvider);
+            //Connector.Connect(Camera.VideoChannel, ImageProvider);
 
             Camera.CameraStateChanged += Camera_CameraStateChanged;
             Camera.CameraErrorOccurred += Camera_CameraErrorOccurred;
 
             Camera.Start();
+            //Camera.Connect();
         }
 
         private void Camera_CameraErrorOccurred(object sender, CameraErrorEventArgs e)

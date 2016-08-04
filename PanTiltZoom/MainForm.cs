@@ -9,6 +9,8 @@ using _02_PTZ_Camera_Motion_Control.LOG;
 using System.Collections.Generic;
 using SlimDX.DirectInput;
 using SlimDX;
+using System.Net.NetworkInformation;
+using System.Threading;
 
 namespace _02_PTZ_Camera_Motion_Control
 {
@@ -20,6 +22,8 @@ namespace _02_PTZ_Camera_Motion_Control
         IpCameraHandler[] kamerak = new IpCameraHandler[10];
         bool stopped = false;
         public int selectedcamera = 0;
+        bool connectall = false;
+        int ia = 1;
 
         private CameraURLBuilderWF _myCameraUrlBuilder;
 
@@ -54,9 +58,9 @@ namespace _02_PTZ_Camera_Motion_Control
                 timer1.Enabled = true;
                 timer2.Enabled = true;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                MessageBox.Show("Lehet, hogy be kéne dugni a dildót.","Má megin gyökér vagy!",MessageBoxButtons.OK,MessageBoxIcon.Exclamation);
+                MessageBox.Show("Lehet, hogy be kéne dugni a dildót.", "Má megin gyökér vagy!", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                 this.Close();
             }
 
@@ -87,6 +91,20 @@ namespace _02_PTZ_Camera_Motion_Control
             {
                 IpCameraHandler curr = (IpCameraHandler)sender;
                 Log.Write(curr.Camera.CameraAddress.ToString() + " : " + e.State);
+                string str = curr.Camera.CameraAddress.ToString().Split(':')[0].Substring(curr.Camera.CameraAddress.ToString().Split(':')[0].Length - 2);
+                if (connectall && (e.State.Equals(CameraState.Connected) || e.State.Equals(CameraState.Disconnected)))
+                {
+                    try
+                    {
+                        if (kamerak[(int.Parse(str)) + 1] == null)
+                            connect((int.Parse(str)) + 1);
+                    }
+                    catch (Exception ex)
+                    {
+
+                    }
+                }
+
             });
         }
 
@@ -96,7 +114,16 @@ namespace _02_PTZ_Camera_Motion_Control
 
         private void ModelCameraErrorOccured(object sender, CameraErrorEventArgs e)
         {
-            InvokeGuiThread(() => Log.Write("Camera error: " + (e.Details ?? e.Error.ToString())));
+            InvokeGuiThread(() =>
+            {
+                IpCameraHandler curr = (IpCameraHandler)sender;
+                Log.Write("Camera error: " + (e.Details ?? e.Error.ToString()));
+                if (e.Error.Equals(IPCameraError.NoEndPoint))
+                {
+                    string str = curr.Camera.CameraAddress.ToString().Split(':')[0].Substring(curr.Camera.CameraAddress.ToString().Split(':')[0].Length - 2);
+                    kamerak[(int.Parse(str))] = null;
+                }
+            });
         }
 
         private void LinkLabel_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -298,13 +325,15 @@ namespace _02_PTZ_Camera_Motion_Control
             bool[] buttons = state.GetButtons();
             for (int i = 0; i <= 8; i++)
             {
-                if (buttons[i])
-                    selectedcamera = i+1;
+                if (buttons[i] && kamerak[i + 1] != null)
+                    selectedcamera = i + 1;
             }
+            if (buttons[11])
+                selectedcamera = 0;
             label8.Text = selectedcamera.ToString();
             if (selectedcamera != 0)
             {
-                
+
                 int xsp = (state.X) / 625;
                 int ysp = (state.Y) / 625;
                 int zsp = (state.Z) / 625;
@@ -390,6 +419,11 @@ namespace _02_PTZ_Camera_Motion_Control
 
         private void timer2_Tick(object sender, EventArgs e)
         {
+            if (ia<10)
+            {
+                connect(ia);
+                ia++;
+            }
             string prev = label3.Text;
             string next = "";
             for (int i = 1; i <= 9; i++)
@@ -416,6 +450,22 @@ namespace _02_PTZ_Camera_Motion_Control
 
         private void MainForm_KeyDown(object sender, KeyEventArgs e)
         {
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            //connectall = true;
+            //connect(1);
+            
+        }
+
+        private void connect(int i)
+        {
+            IpCameraHandler cam = new IpCameraHandler();
+            cam.CameraStateChanged += ModelCameraStateChanged;
+            cam.CameraErrorOccured += ModelCameraErrorOccured;
+            cam.ConnectOnvifCamera("192.168.226.10" + i + ":80;Username=admin;Password=123456;Transport=UDP;");
+            kamerak[i] = cam;
         }
     }
 }
